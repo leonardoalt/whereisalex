@@ -1,0 +1,19 @@
+{
+  "name": "WhereIsAlex",
+  "version": "0.1.0",
+  "private": true,
+  "devDependencies": {},
+  "dependencies": {
+    "argparse": "^1.0.10",
+    "bignumber.js": "^6.0.0",
+    "colors": "^1.1.2",
+    "dateformat": "^3.0.3",
+    "dotenv": "^2.0.0",
+    "solc": "^0.4.24",
+    "web3": "^1.0.0-beta.34",
+    "web3-utils": "^1.0.0-beta.30"
+  },
+  "scripts": {
+    "test": "node scripts/test.js --env=jsdom"
+  }
+}
