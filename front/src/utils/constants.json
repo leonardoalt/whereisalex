@@ -1,0 +1,10 @@
+{
+  "contracts": {
+    "42": {
+      "WhereIsAlex": "0xCA03B0EC89143d1AF2A100f1CA940DdE94f964af"
+    },
+    "1": {
+      "WhereIsAlex": "0x"
+    }
+  }
+}

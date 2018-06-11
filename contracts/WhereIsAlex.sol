@@ -1,32 +1,33 @@
 pragma solidity ^0.4.24;
-pragma experimental ABIEncoderV2;
-pragma experimental "v0.5.0";
 
 contract WhereIsAlex
 {
 	struct Bet {
+		uint checkIn;
+		address sender;
 		bytes3 airport;
 		uint value;
-		uint checkIn;
 		uint timestamp;
 	}
 
 	struct CheckIn {
+		uint id;
 		bytes3 airport;
 		uint timestamp;
-		uint id;
 		uint sumBets;
 	}
 
 	address public owner;
 	address public alex;
 	uint public currentCheckIn;
+	uint public nBets;
 	CheckIn[] public checkIns;
-	mapping (address => mapping (uint => Bet)) public bets;
+	Bet[] public bets;
+	mapping (uint => mapping (address => uint)) public userBets;
 	mapping (uint => mapping (bytes3 => uint)) public airportBets;
 
-	event NewBet(address indexed user, bytes3 indexed airport, uint indexed checkInId, uint value);
-	event NewCheckIn(bytes3 indexed airport, uint indexed checkInId, uint timestamp);
+	event NewBet(uint indexed checkIn, address indexed sender, bytes3 indexed airport, uint value, uint timestamp);
+	event NewCheckIn(uint indexed id, bytes3 indexed airport, uint timestamp, uint sumBets);
 	event Withdraw(address indexed user, uint value);
 
 	modifier onlyAlex {
@@ -38,18 +39,30 @@ contract WhereIsAlex
 		owner = msg.sender;
 		alex = _alex;
 		pushEmptyCheckIn();
+		// Hack to make it easier to check if an address has bet
+		bets.push(Bet({
+			airport: 0x0,
+			sender: 0x0,
+			value: 0,
+			checkIn: 0,
+			timestamp: 0
+		}));
 	}
 
 	function addBet(bytes3 _airport) public payable {
 		CheckIn storage checkIn = checkIns[currentCheckIn];
-		Bet storage bet = bets[msg.sender][currentCheckIn];
-
-		uint _value = bet.value;
-		bet.airport = _airport;
-		require(_value + msg.value >= _value);
-		bet.value = _value + msg.value;
-		bet.timestamp = block.timestamp;
-		bet.checkIn = currentCheckIn;
+		uint betId = userBets[currentCheckIn][msg.sender];
+		require(betId == 0);
+		require(msg.value > 0);
+		// New bet from that user on that checkIn
+		bets.push(Bet({
+			value: msg.value,
+			airport: _airport,
+			sender: msg.sender,
+			timestamp: block.timestamp,
+			checkIn: currentCheckIn
+		}));
+		userBets[currentCheckIn][msg.sender] = ++nBets;
 
 		uint _airportBet = airportBets[currentCheckIn][_airport];
 		require(_airportBet + msg.value >= _airportBet);
@@ -58,7 +71,7 @@ contract WhereIsAlex
 		require(checkIn.sumBets + msg.value >= msg.value);
 		checkIn.sumBets += msg.value;
 
-		emit NewBet(msg.sender, _airport, currentCheckIn, bet.value);
+		emit NewBet(currentCheckIn, msg.sender, _airport, msg.value, block.timestamp);
 	}
 
 	function checkIn(bytes3 _airport) onlyAlex public {
@@ -67,7 +80,7 @@ contract WhereIsAlex
 		check.timestamp = block.timestamp;
 		check.id = currentCheckIn;
 
-		emit NewCheckIn(_airport, currentCheckIn, block.timestamp);
+		emit NewCheckIn(currentCheckIn, _airport, block.timestamp, check.sumBets);
 
 		++currentCheckIn;
 		pushEmptyCheckIn();
@@ -75,13 +88,16 @@ contract WhereIsAlex
 
 	function withdraw(uint checkInId) public {
 		CheckIn storage check = checkIns[checkInId];
-		Bet storage bet = bets[msg.sender][checkInId];
+		uint betId = userBets[checkInId][msg.sender];
+		require(bets.length > betId);
+		Bet storage bet = bets[betId];
+		require(bet.sender == msg.sender);
 		require(check.airport == bet.airport);
 		
 		uint amount = (bet.value * check.sumBets) / airportBets[checkInId][check.airport];
 		require(amount >= bet.value);
 		msg.sender.transfer(amount);
-		delete bets[msg.sender][checkInId];
+		delete bets[betId];
 
 		emit Withdraw(msg.sender, amount);
 	}
