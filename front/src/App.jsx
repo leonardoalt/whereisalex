@@ -40,7 +40,12 @@ class App extends Component {
   async componentDidMount() {
     try {
       const web3Results = await getWeb3();
-      const web3ResultsWS = await getWeb3WS();
+      let web3ResultsWS = await getWeb3WS();
+	  if (web3ResultsWS === undefined) {
+		web3ResultsWS = web3Results;
+		web3ResultsWS.web3jsWS = web3Results.web3js;
+		web3ResultsWS.networkIdWS = web3Results.networkId;
+	  }
       const ABI = WhereIsAlexJson.abi;
       const contract = new web3Results.web3js.eth.Contract(ABI, constants.contracts[web3Results.networkId].WhereIsAlex);
       const contractWS = new web3ResultsWS.web3jsWS.eth.Contract(ABI, constants.contracts[web3ResultsWS.networkIdWS].WhereIsAlex);
