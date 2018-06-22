@@ -10,7 +10,7 @@ import Button from 'material-ui/Button';
 import Table, { TableBody, TableCell, TableHead, TableRow } from 'material-ui/Table';
 
 import constants from './utils/constants.json';
-import { getCheckIn, getAirportSum, getCurrentCheckIn, getBet, getCheckIns, getAllBets, getNBets, getBlockTimestamp } from './utils/contractUtils';
+import { getAlexAddress, getCheckIn, getAirportSum, getCurrentCheckIn, getBet, getCheckIns, getAllBets, getNBets, getBlockTimestamp } from './utils/contractUtils';
 
 const styles = theme => ({
   root: {
@@ -55,6 +55,7 @@ class CheckIns extends Component {
    	  checkIns: [],
 	  bets: [],
 	  account: '',
+	  alex: '',
 	  currentCheckIn: 0,
 	  showPastCheckIns: false,
 	  airport: "",
@@ -77,12 +78,18 @@ class CheckIns extends Component {
     if (contract == null)
       return;
 	let _acc = await web3js.eth.getAccounts();
+	console.log(_acc);
 	let _checkIns = await getCheckIns(contract);
 	_checkIns = _checkIns.slice(0, -1).reverse();
+	console.log(_checkIns);
 	let _bets = await getAllBets(contract);
 	_bets = _bets.reverse();
+	console.log(_bets);
 	let _checkIn = await getCurrentCheckIn(contract);
-    this.setState({ checkIns: _checkIns, bets: _bets, account: _acc[0], currentCheckIn: _checkIn });
+	console.log(_checkIn);
+	let _alex = await getAlexAddress(contract);
+	console.log(_alex);
+    this.setState({ checkIns: _checkIns, bets: _bets, account: _acc[0], currentCheckIn: _checkIn, alex: _alex });
 
 	let _block2 = await this.props.web3jsWS.eth.getBlockNumber();
 	let self = this;
@@ -145,6 +152,15 @@ class CheckIns extends Component {
 		  .send({from: this.state.account, value: _value});
   }
 
+  checkIn = () => {
+	  if (this.state.account != this.state.alex) return;
+	  let _airport = this.state.airport;
+	  if (_airport.length != 3) return;
+	  let _bytes3 = web3js.utils.asciiToHex(_airport);
+	  let tx = this.props.whereIsAlexContract.methods.checkIn(_bytes3)
+	      .send({from: this.state.account});
+  }
+
   hexToAscii = (hexBytes) => {
 	  return web3js.utils.hexToAscii(hexBytes);
   }
@@ -169,7 +185,29 @@ class CheckIns extends Component {
 
   render() {
     const { classes, whereIsAlexContract } = this.props;
-    const { checkIns, bets, showPastCheckIns } = this.state;
+    const { checkIns, bets, account, alex, showPastCheckIns } = this.state;
+
+	if (account !== '' && account == alex)
+	  return (
+		<Grid container className={classes.root}>
+		<Grid item xs={12}>
+		<Typography className={classes.text} variant='display3'>
+			Welcome, Alex!
+		</Typography>
+		</Grid>
+		<Grid item xs={12} className={classes.text}>
+		  <TextField className={classes.textField}
+		    id="airport"
+		    label="Airport code"
+		    placeholder="Airport"
+			onChange={this.handleAirportChange}
+		    />
+			<Button onClick={() => this.checkIn()} variant="raised" color="primary" className={classes.button}>
+        		Check-in
+      		</Button>
+		</Grid>
+		</Grid>
+	  );
 
     return (
       <Grid container className={classes.root}>

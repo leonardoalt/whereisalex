@@ -63,4 +63,9 @@ const getBlockTimestamp = async (web3js, blockNumber) => {
     return block.timestamp;
 };
 
-export {getAirportSum, getCurrentCheckIn, getBet, getCheckIns, getAllBets, getNBets, getCheckIn, getBlockTimestamp};
+const getAlexAddress = async (contract) => {
+	let alex = await contract.methods.alex().call({});
+	return alex;
+}
+
+export {getAlexAddress, getAirportSum, getCurrentCheckIn, getBet, getCheckIns, getAllBets, getNBets, getCheckIn, getBlockTimestamp};
